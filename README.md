@@ -1,21 +1,36 @@
 # multimedia-knob
-![image-preview](https://user-images.githubusercontent.com/59659167/234576393-500a1231-701e-4776-b843-6a909da3d1f8.png)
+![knob3.0.png](https://raw.githubusercontent.com/luckkyboy/multimedia-knob/refs/heads/main/pic/knob3.0.png)
 
-Use the Raspberry Pi Pico as an multimedia knob to control your PC volume and play/pause music.
+Use the Raspberry Pi Pico as an multimedia knob to control your PC.
 
-As a base of the code, I use [Raspberry Pi Pico - CircuitPython volume knob](https://gist.github.com/maxmacstn/805991009e9302977f694e5b17a62b73), made by [maxmacstn](https://gist.github.com/maxmacstn).
+As a base of the code, fork from [multimedia-knob](https://github.com/Xitee1/multimedia-knob/tree/main), by [Xitee1](https://github.com/Xitee1).
 
-### What's better in this version?
-With the original version, the knob very often stopped working. Either after sleep, reboot or just randomly while the PC is on. With this version it works very reliably. I haven't had to re-plug the Pi Pico for a few weeks now and it survived all sleep/wake cycles and reboots.
+## Some more little improvements:
+- Add button handler library to support double press and hold event
+- Add mode changing function through long press
+- Add RGB LED, the colors correspond to modes
+- Hold the button within 3 seconds of insert the USB to trigger storage.remount("/", readonly=False)
+- Optimized code logic
 
-_Note: When opening Thonny on the PC it might stop working again. Close Thonny (or better restart you PC), then plug out, wait 5-10 secs until Windows realizes it, then plug it back in._
+## Parts List:
+- Raspberry Pi Pico
+- ky-040 rotary encoder module
+- 5050 SMD RGB LED module
+- LDT3.0 Light guide column 3mm, specification: 3.0-2.54mm
+- Knob cap, specification: diameter=30mm~40mm,height=10mm,bore diameter=6mm and D-port
 
-#### Some more little improvements:
-- Prints messages only when in debug mode
-- Does not automatically mount the storage. This cleans up the file explorer a bit. To edit the code, hold the button down while plugging the Pi in. If that does not work you can alternatively type the commands mentioned in the program at the top.
-
-### Other noteworthy things
-As I don't use it, I have removed the mode changing function. I haven't fully removed it but only removed the function to change the "currentMode". It should be rather easy to add it back in.
+## Connect to GPIO
+### Rotary encoder module
+- CLK_PIN -> GP2
+- DT_PIN -> GP3
+- SW_PIN -> GP4
+- GND -> GND
+- '+ port' -> 3V3(OUT)
+### RGB LED module
+- R -> GP20
+- G -> GP19
+- B -> GP18
+- GND -> GND
 
 ## How to use it:
 1. Download the [CircuitPython UF2 file](https://circuitpython.org/board/raspberry_pi_pico/)

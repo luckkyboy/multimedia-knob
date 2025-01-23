@@ -1,15 +1,20 @@
-import digitalio
+import adafruit_rgbled
 import board
-import usb_hid
-import time
+import digitalio
+import rotaryio
 import storage
-from adafruit_hid.keyboard import Keyboard
-#from adafruit_hid.mouse import Mouse
-from adafruit_hid.keycode import Keycode
+import time
+import usb_hid
+
 from adafruit_hid.consumer_control import ConsumerControl
 from adafruit_hid.consumer_control_code import ConsumerControlCode
+from adafruit_hid.keyboard import Keyboard
+from adafruit_hid.keycode import Keycode
+from adafruit_hid.mouse import Mouse
+from button_handler import ButtonHandler, ButtonInput, ButtonInitConfig
+from keypad import Keys
 
-print("== Pi Pico multifunction knob 2.1 ==")
+print("== Pi Pico multifunction knob 3.0 ==")
 #
 # IMPORTANT FOR EDITING THIS SCRIPT
 # Press down the knob while plugging in to be able to edit the code.
@@ -19,30 +24,31 @@ print("== Pi Pico multifunction knob 2.1 ==")
 # storage.remount("/", readonly=False)
 #
 # Debug
-debug = False
+debug = True
 
 # Pins
-CLK_PIN = board.GP4
+CLK_PIN = board.GP2
 DT_PIN = board.GP3
-SW_PIN = board.GP2
+SW_PIN = board.GP4
+RED_LED = board.GP20
+GREEN_LED = board.GP19
+BLUE_LED = board.GP18
 
-rotateDelay = False
-totalModes = 1
+totalMode = 3
 currentMode = 0
 
 cc = ConsumerControl(usb_hid.devices)
-# mouse = Mouse(usb_hid.devices)
+mouse = Mouse(usb_hid.devices)
 keyboard = Keyboard(usb_hid.devices)
 
-clk = digitalio.DigitalInOut(CLK_PIN)
-clk.direction = digitalio.Direction.INPUT
+encoder = rotaryio.IncrementalEncoder(CLK_PIN, DT_PIN)
+last_position = encoder.position
 
-dt = digitalio.DigitalInOut(DT_PIN)
-dt.direction = digitalio.Direction.INPUT
+led = adafruit_rgbled.RGBLED(RED_LED, GREEN_LED, BLUE_LED)
 
-sw = digitalio.DigitalInOut(SW_PIN)
-sw.direction = digitalio.Direction.INPUT
-sw.pull = digitalio.Pull.UP
+# Mount storage when knob is pressed while plugging in
+pluggingInTime = None
+pluggingIn = False
 
 
 def millis():
@@ -54,31 +60,101 @@ def log(message):
         print(message)
 
 
-def ccw():
-    log("Knob: turned left")
+def blinkWhenPluggingIn():
+    led.color = 0xFFFFFF
 
+
+def ledMode2():
+    led.color = 0x008833
+
+
+def ledMode1():
+    led.color = 0x880033
+
+
+def ledMode0():
+    led.color = 0x0000DD
+
+
+def ccw():
+    log("Knob: turned left, mode = " + str(currentMode))
     if currentMode == 0:
         # Volume decrement
         cc.send(ConsumerControlCode.VOLUME_DECREMENT)
+    if currentMode == 1:
+        # Mouse wheel increment
+        mouse.move(wheel=2)
+    if currentMode == 2:
+        # Brightness decrement
+        cc.send(ConsumerControlCode.BRIGHTNESS_DECREMENT)
 
 
 def cw():
-    log("Knob: turned right")
-
+    log("Knob: turned right, mode = " + str(currentMode))
     if currentMode == 0:
         # Volume increment
         cc.send(ConsumerControlCode.VOLUME_INCREMENT)
+    if currentMode == 1:
+        # Mouse wheel decrement
+        mouse.move(wheel=-2)
+    if currentMode == 2:
+        # Brightness increment
+        cc.send(ConsumerControlCode.BRIGHTNESS_INCREMENT)
 
 
-def long_press():
-    # Mac sleep: CMD + OPT + EJECT
-    log("Knob: long press detected")
+def double_press():
+    global currentMode
+    global pluggingIn
+    log("Knob: double press detected, mode = " + str(currentMode))
+    if pluggingIn:
+        pluggingIn = False
+    else:
+        if currentMode == 0:
+            cc.send(ConsumerControlCode.MUTE)
+        if currentMode == 1:
+            keyboard.press(Keycode.COMMAND, Keycode.L)
+            keyboard.release_all()
+            long_press()
+            return
+        if currentMode == 2:
+            keyboard.press(Keycode.ENTER)
+            keyboard.release_all()
+            time.sleep(1)
+            keyboard.press(Keycode.NINE, Keycode.TWO, Keycode.EIGHT, Keycode.SEVEN)
+            keyboard.release_all()
+            keyboard.press(Keycode.ENTER)
+            keyboard.release_all()
+            long_press()
 
 
 def short_press():
-    log("Knob: short press detected")
+    global currentMode
+    log("Knob: short press detected, mode = " + str(currentMode))
     if currentMode == 0:
+        log("PLAY_PAUSE")
         cc.send(ConsumerControlCode.PLAY_PAUSE)
+    elif currentMode == 1:
+        mouse.click(Mouse.LEFT_BUTTON)
+    elif currentMode == 2:
+        log("TODO short press in mode 2")
+
+def long_press():
+    global totalMode
+    global currentMode
+    currentMode += 1
+    currentMode %= totalMode
+    log("Knob Mode: " + str(currentMode))
+
+
+def hold():
+    global pluggingInTime
+    global pluggingIn
+    timeNow = millis()
+    if timeNow - pluggingInTime < 3000 and currentMode == 0:
+        log("Knob: Mount storage when knob is hold after plugging in!")
+        storage.remount("/", readonly=False)
+        blinkWhenPluggingIn()
+        pluggingIn = True
 
 
 def reset_keyboard(force=False):
@@ -100,56 +176,57 @@ def reset_keyboard(force=False):
             keyboard = Keyboard(usb_hid.devices)
 
 
+actions = {
+    ButtonInput(ButtonInput.DOUBLE_PRESS, callback=double_press),
+    ButtonInput(ButtonInput.SHORT_PRESS, callback=short_press),
+    ButtonInput(ButtonInput.LONG_PRESS, callback=long_press),
+    ButtonInput(ButtonInput.HOLD, callback=hold),
+}
+
+scanner = Keys([SW_PIN], value_when_pressed=False)
+button_config = ButtonInitConfig(True, 350, 900, 2)
+button_handler = ButtonHandler(scanner.events, actions, 1, {0: button_config})
+
+
 def loop():
-    global rotateDelay
+    global currentMode
+    global last_position
 
-    current_state = clk.value
-    # Rotation
-    if not current_state:
-        if not rotateDelay:
-            reset_keyboard()
-            try:
-                if dt.value != current_state:
-                    cw()
-                else:
-                    ccw()
-            except Exception as e:
-                print("An error occurred: {}".format(e))
-                reset_keyboard(True)
-
-            rotateDelay = True
-    else:
-        rotateDelay = False
+    if currentMode == 0:
+        ledMode0()
+    if currentMode == 1:
+        ledMode1()
+    if currentMode == 2:
+        ledMode2()
+    current_position = encoder.position
+    position_change = current_position - last_position
+    if position_change > 0:
+        for _ in range(position_change):
+            cw()
+        log(current_position)
+    elif position_change < 0:
+        for _ in range(-position_change):
+            ccw()
+        log(current_position)
+    last_position = current_position
 
     # Press
-    if sw.value == 0:
-        press_time = millis()
-        time.sleep(0.2)
-        long_pressed = False
-        reset_keyboard()
-        try:
-            while sw.value == 0:
-                if millis() - press_time > 1000 and not long_pressed:
-                    long_pressed = True
-                    long_press()
-
-            if not long_pressed:
-                short_press()
-
-        except Exception as e:
-            print("An error occurred: {}".format(e))
-            reset_keyboard(True)
+    try:
+        button_handler.update()
+        time.sleep(0.0025)
+    except Exception as e:
+        log("An error occurred: {}".format(e))
+        reset_keyboard(True)
 
 
 if __name__ == "__main__":
-    # Mount storage when knob is pressed while plugging in
-    if sw.value == 0:
-        storage.remount("/", readonly=False)
+    pluggingInTime = millis()
 
     while True:
         # try except just in case there are any errors that might occur for any reason. Make sure it keeps running.
         try:
             loop()
         except Exception as e2:
-            print("An error in the loop occurred: {}".format(e2))
+            log("An error in the loop occurred: {}".format(e2))
             reset_keyboard(True)
+
