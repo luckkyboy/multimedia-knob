@@ -104,27 +104,22 @@ def cw():
 
 def double_press():
     global currentMode
-    global pluggingIn
-    log("Knob: double press detected, mode = " + str(currentMode))
-    if pluggingIn:
-        pluggingIn = False
-    else:
-        if currentMode == 0:
+    if currentMode == 0:
             cc.send(ConsumerControlCode.MUTE)
-        if currentMode == 1:
-            keyboard.press(Keycode.COMMAND, Keycode.L)
-            keyboard.release_all()
-            long_press()
-            return
-        if currentMode == 2:
-            keyboard.press(Keycode.ENTER)
-            keyboard.release_all()
-            time.sleep(1)
-            keyboard.press(Keycode.NINE, Keycode.TWO, Keycode.EIGHT, Keycode.SEVEN)
-            keyboard.release_all()
-            keyboard.press(Keycode.ENTER)
-            keyboard.release_all()
-            long_press()
+    if currentMode == 1:
+        keyboard.press(Keycode.COMMAND, Keycode.L)
+        keyboard.release_all()
+        long_press()
+        return
+    if currentMode == 2:
+        keyboard.press(Keycode.ENTER)
+        keyboard.release_all()
+        time.sleep(1)
+        keyboard.press(Keycode.NINE, Keycode.TWO, Keycode.EIGHT, Keycode.SEVEN)
+        keyboard.release_all()
+        keyboard.press(Keycode.ENTER)
+        keyboard.release_all()
+        long_press()
 
 
 def short_press():
@@ -138,12 +133,17 @@ def short_press():
     elif currentMode == 2:
         log("TODO short press in mode 2")
 
+
 def long_press():
     global totalMode
     global currentMode
-    currentMode += 1
-    currentMode %= totalMode
-    log("Knob Mode: " + str(currentMode))
+    global pluggingIn
+    if pluggingIn:
+        pluggingIn = False
+    else:
+        currentMode += 1
+        currentMode %= totalMode
+        log("Knob Mode: " + str(currentMode))
 
 
 def hold():
@@ -229,4 +229,3 @@ if __name__ == "__main__":
         except Exception as e2:
             log("An error in the loop occurred: {}".format(e2))
             reset_keyboard(True)
-
