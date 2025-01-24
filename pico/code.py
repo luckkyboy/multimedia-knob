@@ -15,16 +15,9 @@ from button_handler import ButtonHandler, ButtonInput, ButtonInitConfig
 from keypad import Keys
 
 print("== Pi Pico multifunction knob 3.0 ==")
-#
-# IMPORTANT FOR EDITING THIS SCRIPT
-# Press down the knob while plugging in to be able to edit the code.
-#
-# As an alternative you can type the following two commands:
-# import storage
-# storage.remount("/", readonly=False)
-#
+
 # Debug
-debug = True
+debug = False
 
 # Pins
 CLK_PIN = board.GP2
@@ -45,10 +38,6 @@ encoder = rotaryio.IncrementalEncoder(CLK_PIN, DT_PIN)
 last_position = encoder.position
 
 led = adafruit_rgbled.RGBLED(RED_LED, GREEN_LED, BLUE_LED)
-
-# Mount storage when knob is pressed while plugging in
-pluggingInTime = None
-pluggingIn = False
 
 
 def millis():
@@ -105,7 +94,7 @@ def cw():
 def double_press():
     global currentMode
     if currentMode == 0:
-            cc.send(ConsumerControlCode.MUTE)
+        cc.send(ConsumerControlCode.MUTE)
     if currentMode == 1:
         keyboard.press(Keycode.COMMAND, Keycode.L)
         keyboard.release_all()
@@ -137,24 +126,14 @@ def short_press():
 def long_press():
     global totalMode
     global currentMode
-    global pluggingIn
-    if pluggingIn:
-        pluggingIn = False
-    else:
-        currentMode += 1
-        currentMode %= totalMode
-        log("Knob Mode: " + str(currentMode))
+    currentMode += 1
+    currentMode %= totalMode
+    log("Knob Mode: " + str(currentMode))
 
 
 def hold():
-    global pluggingInTime
-    global pluggingIn
-    timeNow = millis()
-    if timeNow - pluggingInTime < 3000 and currentMode == 0:
-        log("Knob: Mount storage when knob is hold after plugging in!")
-        storage.remount("/", readonly=False)
-        blinkWhenPluggingIn()
-        pluggingIn = True
+    global currentMode
+    log("Knob: hold detected, mode = " + str(currentMode))
 
 
 def reset_keyboard(force=False):
@@ -220,8 +199,6 @@ def loop():
 
 
 if __name__ == "__main__":
-    pluggingInTime = millis()
-
     while True:
         # try except just in case there are any errors that might occur for any reason. Make sure it keeps running.
         try:
