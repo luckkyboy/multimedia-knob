@@ -16,7 +16,7 @@ led = adafruit_rgbled.RGBLED(RED_LED, GREEN_LED, BLUE_LED)
 # We will disable usb drive in boot.py
 # Press down the knob while plugging in to be able to upload the new code to CIRCUITPY.
 #
-# if CIRCUITPY storage enabled, blink led to RED
+# if CIRCUITPY storage enabled, LED blink RED
 #
 if sw.value != 0:
     storage.disable_usb_drive()

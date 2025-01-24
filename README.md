@@ -12,7 +12,7 @@ As a base of the code, fork from [multimedia-knob](https://github.com/Xitee1/mul
 - Optimized code logic
 - --
 - CIRCUITPY storage is disabled, this has no impact on code and functionality.
-- Press down the knob while plugging in to be able to upload the new code to CIRCUITPY
+- Press down the knob while plugging in to be able to upload the new code to CIRCUITPY. at the same time, LED blink RED.
 
 ## Parts List:
 - Raspberry Pi Pico
