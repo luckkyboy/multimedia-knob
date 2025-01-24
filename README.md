@@ -9,8 +9,10 @@ As a base of the code, fork from [multimedia-knob](https://github.com/Xitee1/mul
 - Add button handler library to support double press and hold event
 - Add mode changing function through long press
 - Add RGB LED, the colors correspond to modes
-- Hold the button within 3 seconds of insert the USB to trigger storage.remount("/", readonly=False)
 - Optimized code logic
+- --
+- CIRCUITPY storage is disabled, this has no impact on code and functionality.
+- Press down the knob while plugging in to be able to upload the new code to CIRCUITPY
 
 ## Parts List:
 - Raspberry Pi Pico
