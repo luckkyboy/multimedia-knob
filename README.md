@@ -1,5 +1,5 @@
 # multimedia-knob
-![knob3.0.png](https://raw.githubusercontent.com/luckkyboy/multimedia-knob/refs/heads/main/pic/knob3.0.png)
+![knob3.0.png](https://raw.githubusercontent.com/luckkyboy/multimedia-knob/refs/heads/main/pictures/knob3.0.png)
 
 Use the Raspberry Pi Pico as an multimedia knob to control your PC.
 
@@ -33,6 +33,8 @@ As a base of the code, fork from [multimedia-knob](https://github.com/Xitee1/mul
 - G -> GP19
 - B -> GP18
 - GND -> GND
+### GPIO
+![gpio.jpeg](https://raw.githubusercontent.com/luckkyboy/multimedia-knob/refs/heads/main/pictures/gpio.jpeg)
 
 ## How to use it:
 1. Download the [CircuitPython UF2 file](https://circuitpython.org/board/raspberry_pi_pico/)
