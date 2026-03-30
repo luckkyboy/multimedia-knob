@@ -1,27 +1,30 @@
-import adafruit_rgbled, board, digitalio, storage, time
+import adafruit_rgbled
+import board
+import digitalio
+import storage
+import time
+
+try:
+    from .boot_logic import should_enable_write_mode, write_mode_indicator_colors
+except ImportError:
+    from boot_logic import should_enable_write_mode, write_mode_indicator_colors
 
 SW_PIN = board.GP4
 RED_LED = board.GP20
 GREEN_LED = board.GP19
 BLUE_LED = board.GP18
 
-sw = digitalio.DigitalInOut(SW_PIN)
-sw.direction = digitalio.Direction.INPUT
-sw.pull = digitalio.Pull.UP
+switch = digitalio.DigitalInOut(SW_PIN)
+switch.direction = digitalio.Direction.INPUT
+switch.pull = digitalio.Pull.UP
 
 led = adafruit_rgbled.RGBLED(RED_LED, GREEN_LED, BLUE_LED)
-#
-# IMPORTANT FOR EDITING THIS SCRIPT
-# In CircuitPython 9.0.0 and later, CIRCUITPY also becomes read-write to your program if it is not visible over USB.
-# We will disable usb drive in boot.py
-# Press down the knob while plugging in to be able to upload the new code to CIRCUITPY.
-#
-# if CIRCUITPY storage enabled, LED blink RED
-#
-if sw.value != 0:
-    storage.disable_usb_drive()
+
+# Press and hold the encoder button while plugging in to expose CIRCUITPY for edits.
+# Otherwise, the USB drive is disabled during normal operation.
+if should_enable_write_mode(switch.value):
+    for color in write_mode_indicator_colors():
+        led.color = color
+        time.sleep(1)
 else:
-    led.color = 0xFF0000
-    time.sleep(1)
-    led.color = 0xFF0000
-    time.sleep(1)
+    storage.disable_usb_drive()
